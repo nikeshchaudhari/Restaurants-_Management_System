@@ -7,10 +7,10 @@ export const POST = async (req: Request) => {
     const body = await req.json();
 
     // check username
-    const checkQuery = "SELECT id FROM tblusers WHERE username = ?LIMIT 1";
-    const usernameCheck = await db.query(checkQuery,[body.username]);
+    const checkQuery = "SELECT id FROM tblusers WHERE username = ? LIMIT 1";
+    const usernameCheck= await db.query(checkQuery,[body.username]);
 
-    if(usernameCheck.length>0){
+    if(usernameCheck[0].length > 0){
       return NextResponse.json({
         msg:"Username already register..",
       },{
