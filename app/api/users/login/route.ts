@@ -3,14 +3,17 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import db from "@/lib/db";
 
+interface User extends RowDataPacket {
+  username: string;
+  password_hash: string;
+}
+
+import { RowDataPacket } from "mysql2";
 export const POST = async (req: Request) => {
   try {
     const body = await req.json();
 
-    const {
-      username,
-      password,
-    } = body;
+    const { username, password } = body;
 
     // Check required fields
     if (!username || !password) {
@@ -20,18 +23,14 @@ export const POST = async (req: Request) => {
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
     // Find user
-    const query =
-      "SELECT * FROM tblusers WHERE username = ? LIMIT 1";
+    const query = "SELECT * FROM tblusers WHERE username = ? LIMIT 1";
 
-    const findUser: any = await db.query(
-      query,
-      [username]
-    );
+    const findUser= await db.query<User[]>(query, [username]);
 
     // User not found
     if (findUser[0].length === 0) {
@@ -41,13 +40,12 @@ export const POST = async (req: Request) => {
         },
         {
           status: 401,
-        }
+        },
       );
     }
 
     const user = findUser[0][0];
     console.log(user);
-    
 
     // Check status
     if (user.status !== "active") {
@@ -57,15 +55,12 @@ export const POST = async (req: Request) => {
         },
         {
           status: 403,
-        }
+        },
       );
     }
 
     // Check password
-    const passwordMatch = await bcrypt.compare(
-      password,
-      user.password_hash
-    );
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!passwordMatch) {
       return NextResponse.json(
@@ -74,7 +69,7 @@ export const POST = async (req: Request) => {
         },
         {
           status: 401,
-        }
+        },
       );
     }
 
@@ -88,7 +83,7 @@ export const POST = async (req: Request) => {
       process.env.JWT_SECRET!,
       {
         expiresIn: "1d",
-      }
+      },
     );
 
     const response = NextResponse.json(
@@ -104,7 +99,7 @@ export const POST = async (req: Request) => {
       },
       {
         status: 200,
-      }
+      },
     );
 
     // Save JWT in cookie
@@ -112,12 +107,11 @@ export const POST = async (req: Request) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 *60*7,
+      maxAge: 60 * 60 * 60 * 7,
       path: "/",
     });
 
     return response;
-
   } catch (error) {
     console.log(error);
 
@@ -127,7 +121,7 @@ export const POST = async (req: Request) => {
       },
       {
         status: 500,
-      }
+      },
     );
   }
 };
