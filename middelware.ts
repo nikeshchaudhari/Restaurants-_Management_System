@@ -9,7 +9,7 @@ export const middlware = async (req: NextRequest) => {
   }
 
   try {
-    const verifyToken = (await jwt.verify(token, process.env.JWT_SECRET!)) as {
+    const verifyToken = await jwt.verify(token, process.env.JWT_SECRET!) as {
       userId: number;
       roleId: number;
       restaurantId: number | null;
@@ -19,7 +19,7 @@ export const middlware = async (req: NextRequest) => {
 
     if (verifyToken.roleId !== 1) {
       return NextResponse.json(
-        { msg: "Only Super Admin can access this" },
+        { msg: "Only Super Admin can create Admin and  access this" },
         { status: 403 },
       );
     }

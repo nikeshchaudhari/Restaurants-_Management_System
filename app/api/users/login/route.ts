@@ -7,20 +7,34 @@ export const POST = async (req: Request) => {
   try {
     const body = await req.json();
 
-    // Check username and password
-    const { username, password } = body;
+    const {
+      username,
+      password,
+    } = body;
 
-    //  Check username
-    const checkQuery =
+    // Check required fields
+    if (!username || !password) {
+      return NextResponse.json(
+        {
+          msg: "Username and password are required",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    // Find user
+    const query =
       "SELECT * FROM tblusers WHERE username = ? LIMIT 1";
 
-    const [users]: any = await db.query(
-      checkQuery,
+    const findUser: any = await db.query(
+      query,
       [username]
     );
 
-    // Username not found
-    if (users.length === 0) {
+    // User not found
+    if (findUser[0].length === 0) {
       return NextResponse.json(
         {
           msg: "Invalid username or password",
@@ -31,16 +45,28 @@ export const POST = async (req: Request) => {
       );
     }
 
-    // Get user
-    const user = users[0];
+    const user = findUser[0][0];
+    console.log(user);
+    
 
-    //  Check password
+    // Check status
+    if (user.status !== "active") {
+      return NextResponse.json(
+        {
+          msg: "Your account is inactive",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+    // Check password
     const passwordMatch = await bcrypt.compare(
       password,
       user.password_hash
     );
 
-    // Password incorrect
     if (!passwordMatch) {
       return NextResponse.json(
         {
@@ -52,7 +78,7 @@ export const POST = async (req: Request) => {
       );
     }
 
-    //  Create JWT token
+    // Create JWT
     const token = jwt.sign(
       {
         userId: user.id,
@@ -65,7 +91,6 @@ export const POST = async (req: Request) => {
       }
     );
 
-    // Create response
     const response = NextResponse.json(
       {
         msg: "Login successful",
@@ -82,12 +107,12 @@ export const POST = async (req: Request) => {
       }
     );
 
-    // Store token in cookie
+    // Save JWT in cookie
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24*7,
+      maxAge: 60 * 60 *60*7,
       path: "/",
     });
 
