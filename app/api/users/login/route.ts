@@ -2,7 +2,16 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import db from "@/lib/db";
+import { RowDataPacket } from "mysql2";
 
+interface UserRow extends RowDataPacket {
+  id: number;
+  name: string;
+  username: string;
+  role_id: number;
+  restaurant_id: number | null;
+  status: string;
+}
 export const POST = async (req: Request) => {
   try {
     const body = await req.json();
@@ -28,7 +37,7 @@ export const POST = async (req: Request) => {
     const query =
       "SELECT * FROM tblusers WHERE username = ? LIMIT 1";
 
-    const findUser: any = await db.query(
+    const findUser = await db.query<UserRow[]>(
       query,
       [username]
     );

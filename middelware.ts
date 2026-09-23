@@ -12,7 +12,7 @@ export const middlware = async (req: NextRequest) => {
     const verifyToken = await jwt.verify(token, process.env.JWT_SECRET!) as {
       userId: number;
       roleId: number;
-      restaurantId: number | null;
+      restaurantId: number;
     };
 
     // only superAdmin

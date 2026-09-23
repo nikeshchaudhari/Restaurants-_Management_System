@@ -10,7 +10,7 @@ interface User extends RowDataPacket {
   phone: string;
   password_hash: string;
   role_id: number;
-  restaurant_id: number | null;
+  restaurant_id: number;
   status: number;
   last_login_at: Date | null;
 }
@@ -18,10 +18,10 @@ export const POST = async (req: Request) => {
   try {
     const body = await req.json();
 
-    const { name, username, phone, password, restaurant_id } = body;
+    const { name, username, phone, password, restaurant_id} = body;
 
     // Check username
-    const checkQuery = "SELECT id FROM tblusers WHERE username = ? LIMIT 1";
+    const checkQuery = "SELECT id FROM tbladmins WHERE username = ? LIMIT 1";
 
     const usernameCheck = await db.query<User[]>(checkQuery, [username]);
 
@@ -41,7 +41,7 @@ export const POST = async (req: Request) => {
 
     // Store Admin
     const query = `
-      INSERT INTO tblusers
+      INSERT INTO tbladmins
       (name, username, phone, password_hash, role_id, restaurant_id, status)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
