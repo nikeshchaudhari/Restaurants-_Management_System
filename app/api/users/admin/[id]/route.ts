@@ -16,6 +16,8 @@ export const PUT = async (req: NextRequest) => {
 
     const body = await req.json();
 
+    const { name, username, phone, password, restaurant_id, status } = body;
+
     // check admin
     if (!id) {
       return NextResponse.json(
@@ -26,23 +28,44 @@ export const PUT = async (req: NextRequest) => {
 
     // find admin
 
-    const findAdminQuery = `SELECT id,name,username,phone FROM tbladmins WHERE id=? AND role_id=2`;
+    const findAdminQuery = `SELECT id FROM tbladmins WHERE id=? AND role_id=2`;
 
     const adminFind = await db.query<AdminData[]>(findAdminQuery, [id]);
-    const findData = adminFind[0]
+    const findData = adminFind[0];
     console.log(findData);
 
-    if(findData.length === 0){
-         return NextResponse.json(
-        { msg: "Admin not found" },
-        { status: 404 },
-      );
+    if (findData.length === 0) {
+      return NextResponse.json({ msg: "Admin not found" }, { status: 404 });
     }
-    
 
-      return NextResponse.json({
-      msg: "Superadmin updated successfully",
-    });
+    //hash password
+
+    const hashPassword = await bcrypt.hash(password, 10);
+
+    // update
+    const updateQuery = `UPDATE tbladmins SET   name = ?,
+        username = ?,
+        phone = ?,
+        password_hash = ?,
+        restaurant_id = ?,
+        status = ? WHERE id =? AND role_id = 2`;
+
+    await db.query(updateQuery, [
+      name,
+      username,
+      phone,
+      hashPassword,
+      restaurant_id,
+      status,
+      id,
+    ]);
+
+    return NextResponse.json(
+      {
+        msg: "Admin updated successfully",
+      },
+      { status: 200 },
+    );
   } catch (err) {
     console.log("Error admin update");
 
