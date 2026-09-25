@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 interface AdminData extends RowDataPacket {
   id: number;
   role_id: number;
@@ -11,6 +12,31 @@ interface AdminData extends RowDataPacket {
 
 export const PUT = async (req: NextRequest) => {
   try {
+    // token
+
+    const token = req.cookies.get("token")?.value;
+
+    if (!token) {
+      return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
+    }
+
+    // token verify
+
+    const verifyToken = jwt.verify(token, process.env.JWT_SECRET!) as {
+      userId: number;
+      roleId: number;
+      restaurantId: number;
+    };
+
+    // only superadmin update data
+
+    if (verifyToken.roleId !== 1) {
+      return NextResponse.json(
+        { msg: "Only Superadmin can update admin data" },
+        { status: 403 },
+      );
+    }
+
     const url = new URL(req.url);
     const id = await url.pathname.split("/").pop();
 
@@ -25,7 +51,6 @@ export const PUT = async (req: NextRequest) => {
         { status: 400 },
       );
     }
-
     // find admin
 
     const findAdminQuery = `SELECT id FROM tbladmins WHERE id=? AND role_id=2`;
@@ -60,9 +85,15 @@ export const PUT = async (req: NextRequest) => {
       id,
     ]);
 
+    const updateDetailsQuery = `SELECT id,name,username,phone,role_id, restaurant_id,status FROM tbladmins WHERE id = ? AND role_id = 2 LIMIT 1 `;
+    const updateDetails = await db.query(updateDetailsQuery, [id]);
+    const updateData = updateDetails[0];
+    console.log(updateData);
+
     return NextResponse.json(
       {
         msg: "Admin updated successfully",
+        adminUpdate: updateData,
       },
       { status: 200 },
     );
