@@ -104,6 +104,76 @@ export const PUT = async (req: NextRequest) => {
   }
 };
 
+// Delete Admin
 
+export const DELETE = async (req: NextRequest) => {
+  try {
+    const token = req.cookies.get("token")?.value;
+    if (!token) {
+      return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
+    }
 
+    // verify token
 
+    const verifyToken = jwt.verify(token, process.env.JWT_SECRET!) as {
+      userId: number;
+
+      roleId: number;
+    };
+
+    if (verifyToken.roleId !== 1) {
+      return NextResponse.json(
+        { msg: "Only Superadmin can delete admin" },
+        { status: 403 },
+      );
+    }
+
+    const url = new URL(req.url);
+    const id = await url.pathname.split("").pop();
+
+    if (!id) {
+      return NextResponse.json(
+        { msg: "Admin ID is required" },
+        { status: 400 },
+      );
+    }
+
+    // find Admin
+
+    const findQuery = `SELECT id,name,username FROM tbladmins WHERE id=? AND role_id=2 LIMIT 1`;
+
+    const adminData = await db.query<AdminData[]>(findQuery, [id]);
+    const data = adminData[0];
+
+    console.log(data);
+
+    if (data.length === 0) {
+      return NextResponse.json({ msg: "Admin not found" }, { status: 404 });
+    }
+
+    // delete query
+
+    const deleteQuery = `DELETE FROM tbladmins WHERE id=? AND role_id =2`;
+
+    await db.query(deleteQuery,[id]);
+
+    return NextResponse.json(
+      {
+        msg: "Admin deleted successfully",
+        admin:data[0],
+      },
+      { status: 200 },
+    );
+  } catch (err) {
+    console.log("Error");
+
+    return NextResponse.json(
+      {
+        error: err,
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+};
