@@ -1,8 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import db from "@/lib/db";
 import { RowDataPacket } from "mysql2";
-
 interface User extends RowDataPacket {
   id: number;
   name: string;
@@ -18,7 +17,7 @@ export const POST = async (req: Request) => {
   try {
     const body = await req.json();
 
-    const { name, username, phone, password, restaurant_id} = body;
+    const { name, username, phone, password, restaurant_id } = body;
 
     // Check username
     const checkQuery = "SELECT id FROM tbladmins WHERE username = ? LIMIT 1";
@@ -51,9 +50,9 @@ export const POST = async (req: Request) => {
       username,
       phone,
       hashPassword,
-      2, 
+      2,
       restaurant_id,
-      1, 
+      1,
     ]);
 
     return NextResponse.json(
@@ -77,3 +76,4 @@ export const POST = async (req: Request) => {
     );
   }
 };
+

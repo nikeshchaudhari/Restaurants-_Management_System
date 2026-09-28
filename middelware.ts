@@ -19,7 +19,7 @@ export const middlware = async (req: NextRequest) => {
 
     if (verifyToken.roleId !== 1) {
       return NextResponse.json(
-        { msg: "Only Super Admin can create Admin and  access this" },
+        { msg: "Only Super Admin  access this" },
         { status: 403 },
       );
     }

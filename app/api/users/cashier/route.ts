@@ -119,3 +119,83 @@ export const POST = async (req: NextRequest) => {
     );
   }
 };
+
+
+
+// get Data
+
+export const GET = async (req: NextRequest) => {
+  try {
+    // 1. Get admin token
+    const token = req.cookies.get("admin_token")?.value;
+
+    if (!token) {
+      return NextResponse.json(
+        { msg: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // 2. Verify token
+    const verifyToken = jwt.verify(
+      token,
+      process.env.JWT_SECRET!
+    ) as {
+      adminId: number;
+      roleId: number;
+      restaurantId: number;
+    };
+
+    // 3. Only Admin can access
+    if (verifyToken.roleId !== 2) {
+      return NextResponse.json(
+        { msg: "Only admin can access this" },
+        { status: 403 }
+      );
+    }
+
+    console.log("Admin Token:", verifyToken);
+
+    // 4. Get only users created by logged-in Admin
+    const getQuery = `
+      SELECT
+        u.id,
+        u.name,
+        u.username,
+        u.phone,
+        u.role_id,
+        u.restaurant_id,
+        u.created_by,
+        a.name AS created_by_name
+      FROM tblusers u
+      JOIN tbladmins a
+        ON u.created_by = a.id
+      WHERE u.created_by = ?
+      ORDER BY u.id DESC
+    `;
+
+    const [users] = await db.query(
+      getQuery,
+      [verifyToken.adminId]
+    );
+
+    console.log("Users:", users);
+
+    // 5. Return data
+    return NextResponse.json(
+      {
+        msg: "Data fetched successfully",
+        users: users,
+      },
+      { status: 200 }
+    );
+
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      { msg: "Invalid or expired token" },
+      { status: 500 }
+    );
+  }
+};

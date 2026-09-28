@@ -140,7 +140,7 @@ export const POST = async (req: Request) => {
     );
 
     // Cookie
-    response.cookies.set("token", token, {
+    response.cookies.set("admin_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

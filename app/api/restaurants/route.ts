@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import jwt from "jsonwebtoken";
 
-import { RowDataPacket } from "mysql2";
 import { ResultSetHeader } from "mysql2";
 
 // interface Restaurant extends RowDataPacket {
