@@ -12,12 +12,11 @@ export const POST = async (req: Request) => {
       phone: body.phone,
       password: hashPassword,
       role_id: 1,
-      restaurant_id: null,
-      status: 1,
+      status: "active",
     };
 
     const query =
-      "INSERT INTO tblusers(name,username,phone,password_hash,role_id,restaurant_id,status)VALUES(?,?,?,?,?,?,?)";
+      "INSERT INTO tblsuperadmin(name,username,phone,password_hash,role_id,status)VALUES(?,?,?,?,?,?)";
 
     await db.query(query, [
       users.name,
@@ -25,8 +24,6 @@ export const POST = async (req: Request) => {
       users.phone,
       users.password,
       users.role_id,
-      users.restaurant_id,
-
       users.status,
     ]);
 

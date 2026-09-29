@@ -3,7 +3,6 @@ import db from "@/lib/db";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { ResultSetHeader } from "mysql2";
-
 import { RowDataPacket } from "mysql2";
 
 interface AdminRow extends RowDataPacket {
@@ -16,6 +15,9 @@ interface AdminRow extends RowDataPacket {
   restaurant_id: number | null;
   status: "active" | "inactive";
 }
+
+// Create Waiter
+
 export const POST = async (req: NextRequest) => {
   try {
     const token = req.cookies.get("admin_token")?.value;
@@ -24,19 +26,17 @@ export const POST = async (req: NextRequest) => {
       return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
     }
 
-    // verify token
-
     const verifyToken = (await jwt.verify(token, process.env.JWT_SECRET!)) as {
       userId: number;
       roleId: number;
       restaurantId: number;
     };
 
-    // only admin create cashier
+    // only admin create waiter
 
     if (verifyToken.roleId !== 2) {
       return NextResponse.json(
-        { msg: "Only admin can create cashier" },
+        { msg: "Only admin can create waiter" },
         { status: 403 },
       );
     }
@@ -51,12 +51,10 @@ export const POST = async (req: NextRequest) => {
       );
     }
 
-    // check username cashier
+    // check username
 
-    const checkQuery = `SELECT id FROM tblusers WHERE username =? LIMIT 1`;
-
-    const findUserName = await db.query<AdminRow[]>(checkQuery, [username]);
-
+    const check = `SELECT id FROM tblusers WHERE username =? LIMIT 1`;
+    const findUserName = await db.query<AdminRow[]>(check, [username]);
     const dataFind = findUserName[0];
 
     if (dataFind.length > 0) {
@@ -68,7 +66,8 @@ export const POST = async (req: NextRequest) => {
 
     // hash
     const hashPassword = await bcrypt.hash(password, 10);
-    // insert cahier data
+
+    // insert waiter data
 
     const createQuery = ` INSERT INTO tblusers
       (
@@ -82,27 +81,28 @@ export const POST = async (req: NextRequest) => {
       )
       VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
-    const data = await db.query<ResultSetHeader>(createQuery, [
+    const result = await db.query<ResultSetHeader>(createQuery, [
       name,
       username,
       phone,
       hashPassword,
-      3,
+      4,
       verifyToken.restaurantId,
       "active",
     ]);
 
-    const result = data[0];
+    
+    const resultData = result[0];
 
-    return NextResponse.json(
+     return NextResponse.json(
       {
-        msg: "Cashier created successfully",
+        msg: "Waiter created successfully",
         cashier: {
-          id: result.insertId,
+          id: resultData.insertId,
           name,
           username,
           phone,
-          role_id: 3,
+          role_id: 4,
           restaurant_id: verifyToken.restaurantId,
           status: "active",
         },
@@ -120,63 +120,6 @@ export const POST = async (req: NextRequest) => {
   }
 };
 
-// get Data
 
-export const GET = async (req: NextRequest) => {
-  try {
-    const token = await req.cookies.get("admin_token")?.value;
+// get Data 
 
-    if (!token) {
-      return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
-    }
-
-    // verifytoken
-
-    const verifyToken = (await jwt.verify(token, process.env.JWT_SECRET!)) as {
-      adminId: number;
-      roleId: number;
-      restaurantId: number;
-    };
-
-    if (verifyToken.roleId !== 2) {
-      return NextResponse.json(
-        { msg: "Only admin can access this" },
-        { status: 403 },
-      );
-    }
-    // get users only admin
-
-    const query = ` SELECT
-    id,
-    name,
-    username,
-    phone,
-    role_id,
-    restaurant_id
-  FROM tblusers
-  WHERE restaurant_id = ?
-  ORDER BY id DESC`;
-
-  const resultData = await db.query(query,[verifyToken.restaurantId]);
-
-  const data = resultData[0]
-
-
-    return NextResponse.json(
-      {
-        msg: "Data fetched successfully",
-        data:{
-          resultData:data
-        }
-      },
-      { status: 200 },
-    );
-  } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      { msg: "Invalid or expired token" },
-      { status: 500 },
-    );
-  }
-};
