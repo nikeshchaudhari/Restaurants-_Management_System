@@ -12,7 +12,7 @@ import { ResultSetHeader } from "mysql2";
 // }
 export const POST = async (req: NextRequest) => {
   try {
-    const token = await req.cookies.get("token")?.value;
+    const token = await req.cookies.get("super_token")?.value;
     if (!token) {
       return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
     }
