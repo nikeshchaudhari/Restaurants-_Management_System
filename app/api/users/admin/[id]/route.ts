@@ -14,7 +14,7 @@ export const PUT = async (req: NextRequest) => {
   try {
     // token
 
-    const token = req.cookies.get("token")?.value;
+    const token = req.cookies.get("super_token")?.value;
 
     if (!token) {
       return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
@@ -108,7 +108,7 @@ export const PUT = async (req: NextRequest) => {
 
 export const DELETE = async (req: NextRequest) => {
   try {
-    const token = req.cookies.get("token")?.value;
+    const token = req.cookies.get("super_token")?.value;
     if (!token) {
       return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
     }

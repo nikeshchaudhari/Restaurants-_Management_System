@@ -21,7 +21,7 @@ interface JwtPayload {
 export const GET = async (req: NextRequest) => {
   try {
     // Get token
-    const token = req.cookies.get("token")?.value;
+    const token = req.cookies.get("admin_token")?.value;
 
     if (!token) {
       return NextResponse.json(
