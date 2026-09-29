@@ -46,12 +46,12 @@ export const PUT = async (req: NextRequest) => {
     // find admin
 
     const findQuery = `SELECT id FROM tblusers WHERE id=? AND role_id = 3`;
-    const findCashier = await db.query<Data[]>(findQuery, [id]);
-    const findData = findCashier[0];
+    const findWaiter = await db.query<Data[]>(findQuery, [id]);
+    const findData = findWaiter[0];
     console.log(findData);
 
     if (findData.length === 0) {
-      return NextResponse.json({ msg: "Cashier not found" }, { status: 404 });
+      return NextResponse.json({ msg: "Waiter not found" }, { status: 404 });
     }
 
     // update query
@@ -139,7 +139,7 @@ export const DELETE = async (req: NextRequest) => {
     console.log(allData);
 
     if (allData.length === 0) {
-      return NextResponse.json({ msg: "Cashier not found" }, { status: 404 });
+      return NextResponse.json({ msg: "Waiter not found" }, { status: 404 });
     }
 
     // delete query 
@@ -148,7 +148,7 @@ export const DELETE = async (req: NextRequest) => {
 
     return NextResponse.json(
       {
-        msg: "Cashier deleted successfully",
+        msg: "Waiter deleted successfully",
         admin:data[0],
       },
       { status: 200 },
