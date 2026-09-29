@@ -19,10 +19,7 @@ export const POST = async (req: Request) => {
   try {
     const body = await req.json();
 
-    const {
-      username,
-      password,
-    } = body;
+    const { username, password } = body;
 
     // Required fields
     if (!username || !password) {
@@ -32,7 +29,7 @@ export const POST = async (req: Request) => {
         },
         {
           status: 400,
-        }
+        },
       );
     }
 
@@ -40,11 +37,11 @@ export const POST = async (req: Request) => {
     const [users] = await db.query<UserRow[]>(
       `
       SELECT *
-      FROM tblusers
+      FROM tblsuperadmin
       WHERE username = ?
       LIMIT 1
       `,
-      [username]
+      [username],
     );
 
     // User not found
@@ -55,29 +52,26 @@ export const POST = async (req: Request) => {
         },
         {
           status: 401,
-        }
+        },
       );
     }
 
-  const user = users[0];
+    const user = users[0];
 
-// Check status
-if (user.status !== "active") {
-  return NextResponse.json(
-    {
-      msg: "Your account is inactive",
-    },
-    {
-      status: 403,
+    // Check status
+    if (user.status !== "active") {
+      return NextResponse.json(
+        {
+          msg: "Your account is inactive",
+        },
+        {
+          status: 403,
+        },
+      );
     }
-  );
-}
 
     // Check password
-    const passwordMatch = await bcrypt.compare(
-      password,
-      user.password_hash
-    );
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!passwordMatch) {
       return NextResponse.json(
@@ -86,9 +80,16 @@ if (user.status !== "active") {
         },
         {
           status: 401,
-        }
+        },
       );
     }
+
+    await db.query(
+      `UPDATE tblsuperadmin
+   SET last_login_at = NOW()
+   WHERE id = ?`,
+      [user.id],
+    );
 
     // Create JWT
     const token = jwt.sign(
@@ -100,7 +101,7 @@ if (user.status !== "active") {
       process.env.JWT_SECRET!,
       {
         expiresIn: "7d",
-      }
+      },
     );
 
     // Response
@@ -117,15 +118,15 @@ if (user.status !== "active") {
       },
       {
         status: 200,
-      }
+      },
     );
 
     // JWT Cookie
-    response.cookies.set("token", token, {
+    response.cookies.set("super_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24*7,
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
 
@@ -139,7 +140,7 @@ if (user.status !== "active") {
       },
       {
         status: 500,
-      }
+      },
     );
   }
 };

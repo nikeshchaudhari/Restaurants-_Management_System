@@ -23,7 +23,7 @@ export const DELETE = async (req: NextRequest) => {
 
     // superadmin find
     const query = `SELECT id, name,  username
-       FROM tblusers WHERE id=? AND role_id = 1 LIMIT 1 `;
+       FROM tblsuperadmin WHERE id=? AND role_id = 1 LIMIT 1 `;
 
     const superAdmin = await db.query<superAdminData[]>(query, [id]);
     const adminData = superAdmin[0][0];
@@ -37,7 +37,7 @@ export const DELETE = async (req: NextRequest) => {
 
     // delte data
 
-    const deleteQuery = `DELETE from tblusers WHERE id =? AND role_id =1`;
+    const deleteQuery = `DELETE from tblsuperadmin WHERE id =? AND role_id =1`;
 
     await db.query(deleteQuery, [id]);
     return NextResponse.json(
@@ -74,7 +74,7 @@ export const PUT = async (req: NextRequest) => {
     const { name, username, phone, password, status } = body;
 
     // check superadmin
-    const checkQuery = `SELECT id FROM tblusers WHERE id=? AND role_id=1 LIMIT 1`;
+    const checkQuery = `SELECT id FROM tblsuperadmin WHERE id=? AND role_id=1 LIMIT 1`;
     const superAdminData = await db.query<superAdminData[]>(checkQuery, [id]);
     const data = superAdminData[0];
     console.log(superAdminData);
@@ -91,7 +91,7 @@ export const PUT = async (req: NextRequest) => {
     // password hash
 
     const hashPassword = await bcrypt.hash(password,10);
-    const updateQuery = `UPDATE tblusers SET name=?, username=?, password_hash=?, phone=?, status=? WHERE id=? AND role_id=1`;
+    const updateQuery = `UPDATE tblsuperadmin SET name=?, username=?, password_hash=?, phone=?, status=? WHERE id=? AND role_id=1`;
 
     await db.query(updateQuery, [name, username, hashPassword, phone,status,id]);
 
