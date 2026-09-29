@@ -108,6 +108,12 @@ export const POST = async (req: Request) => {
         },
       );
     }
+    
+    // login status 
+const loginCheckQuery = `UPDATE tbladmins SET last_login_at = NOW()
+   WHERE id = ? `
+
+   await db.query(loginCheckQuery,[admin.id])
 
     // Create JWT
     const token = jwt.sign(
