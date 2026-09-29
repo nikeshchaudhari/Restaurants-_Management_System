@@ -118,7 +118,7 @@ export const POST = async (req: Request) => {
       },
       process.env.JWT_SECRET!,
       {
-        expiresIn: "1d",
+        expiresIn: "7d",
       },
     );
 

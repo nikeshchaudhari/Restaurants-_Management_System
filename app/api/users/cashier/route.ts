@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { ResultSetHeader } from "mysql2";
 
-import {RowDataPacket} from "mysql2"
+import { RowDataPacket } from "mysql2";
 
 interface AdminRow extends RowDataPacket {
   id: number;
@@ -57,7 +57,7 @@ export const POST = async (req: NextRequest) => {
 
     const findUserName = await db.query<AdminRow[]>(checkQuery, [username]);
 
-    const dataFind = findUserName[0]
+    const dataFind = findUserName[0];
 
     if (dataFind.length > 0) {
       return NextResponse.json(
@@ -66,9 +66,8 @@ export const POST = async (req: NextRequest) => {
       );
     }
 
-
-    // hash 
-    const hashPassword = await bcrypt.hash(password,10);
+    // hash
+    const hashPassword = await bcrypt.hash(password, 10);
     // insert cahier data
 
     const createQuery = ` INSERT INTO tblusers
@@ -83,32 +82,33 @@ export const POST = async (req: NextRequest) => {
       )
       VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
-      const data = await db.query<ResultSetHeader>(createQuery,[name,username,phone,hashPassword,3, verifyToken.restaurantId, "active"]);
+    const data = await db.query<ResultSetHeader>(createQuery, [
+      name,
+      username,
+      phone,
+      hashPassword,
+      3,
+      verifyToken.restaurantId,
+      "active",
+    ]);
 
-      const result = data[0]
-
-
-
-
+    const result = data[0];
 
     return NextResponse.json(
       {
         msg: "Cashier created successfully",
-        cashier:{
-            id:result.insertId,
-            name,
-            username,
-            phone,
-            role_id :3,
-            restaurant_id: verifyToken.restaurantId,
-            status: "active",
-
-        }
+        cashier: {
+          id: result.insertId,
+          name,
+          username,
+          phone,
+          role_id: 3,
+          restaurant_id: verifyToken.restaurantId,
+          status: "active",
+        },
       },
       { status: 200 },
     );
-
-
   } catch (err) {
     console.log("Error");
     return NextResponse.json(
@@ -120,82 +120,63 @@ export const POST = async (req: NextRequest) => {
   }
 };
 
-
-
 // get Data
 
 export const GET = async (req: NextRequest) => {
   try {
-    // 1. Get admin token
-    const token = req.cookies.get("admin_token")?.value;
+    const token = await req.cookies.get("admin_token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        { msg: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Verify token
-    const verifyToken = jwt.verify(
-      token,
-      process.env.JWT_SECRET!
-    ) as {
+    // verifytoken
+
+    const verifyToken = (await jwt.verify(token, process.env.JWT_SECRET!)) as {
       adminId: number;
       roleId: number;
       restaurantId: number;
     };
 
-    // 3. Only Admin can access
     if (verifyToken.roleId !== 2) {
       return NextResponse.json(
         { msg: "Only admin can access this" },
-        { status: 403 }
+        { status: 403 },
       );
     }
+    // get users only admin
 
-    console.log("Admin Token:", verifyToken);
+    const query = ` SELECT
+    id,
+    name,
+    username,
+    phone,
+    role_id,
+    restaurant_id
+  FROM tblusers
+  WHERE restaurant_id = ?
+  ORDER BY id DESC`;
 
-    // 4. Get only users created by logged-in Admin
-    const getQuery = `
-      SELECT
-        u.id,
-        u.name,
-        u.username,
-        u.phone,
-        u.role_id,
-        u.restaurant_id,
-        u.created_by,
-        a.name AS created_by_name
-      FROM tblusers u
-      JOIN tbladmins a
-        ON u.created_by = a.id
-      WHERE u.created_by = ?
-      ORDER BY u.id DESC
-    `;
+  const resultData = await db.query(query,[verifyToken.restaurantId]);
 
-    const [users] = await db.query(
-      getQuery,
-      [verifyToken.adminId]
-    );
+  const data = resultData[0]
 
-    console.log("Users:", users);
 
-    // 5. Return data
     return NextResponse.json(
       {
         msg: "Data fetched successfully",
-        users: users,
+        data:{
+          resultData:data
+        }
       },
-      { status: 200 }
+      { status: 200 },
     );
-
   } catch (error) {
     console.error(error);
 
     return NextResponse.json(
       { msg: "Invalid or expired token" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };
