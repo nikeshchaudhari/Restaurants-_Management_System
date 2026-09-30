@@ -96,7 +96,7 @@ export const POST = async (req: NextRequest) => {
 
      return NextResponse.json(
       {
-        msg: "Waiter created successfully",
+        msg: "Cashiers created successfully",
         cashier: {
           id: resultData.insertId,
           name,
@@ -119,7 +119,4 @@ export const POST = async (req: NextRequest) => {
     );
   }
 };
-
-
-// get Data 
 
