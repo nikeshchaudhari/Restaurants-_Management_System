@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
       );
     }
 
-    let user: LoginUser | null = null;
+    let user: any = null;
 
     // check superadmin
 
@@ -53,14 +54,12 @@ export async function POST(req: Request) {
     const result = await db.query<LoginUser[]>(superAdminQuery, [username]);
 
     const resultData = result[0];
-    console.log(resultData);
+    // console.log(resultData[0]);
 
     if (resultData.length > 0) {
-      const user = resultData[0];
-      return NextResponse.json({
-        msg: "Data",
-        user: user,
-      });
+      const users = resultData[0];
+      user = users;
+     
     }
 
     // admin
@@ -82,23 +81,125 @@ export async function POST(req: Request) {
         LIMIT 1
       `;
 
-      const adminResult = await db.query<LoginUser[]>(adminQuery,[username]);
+      const adminResult = await db.query<LoginUser[]>(adminQuery, [username]);
       const dataAdmin = adminResult[0];
-      if(dataAdmin){
-        const dataUser = dataAdmin[0];
-
-        return NextResponse.json(
-          {
-            msg:"admin data",
-            dataUser:dataUser
-          }
-        )
-
-
+      if (dataAdmin.length > 0) {
+        user = dataAdmin[0];
+        
       }
     }
 
-    return NextResponse.json({ msg: "success" });
+    // staff find
+
+    if (!user) {
+      const userQuery = `
+        SELECT
+          id,
+          name,
+          username,
+          phone,
+          password_hash,
+          role_id,
+          restaurant_id,
+          status,
+          last_login_at
+        FROM tblusers
+        WHERE username = ?
+        LIMIT 1
+      `;
+
+      const userResult = await db.query<LoginUser[]>(userQuery, [username]);
+      const dataUsers = userResult[0];
+      if (dataUsers.length > 0) {
+        user = dataUsers[0];
+
+        
+      }
+
+      console.log(dataUsers[0]);
+    }
+
+    // not found
+    if (!user) {
+      return NextResponse.json(
+        {
+          msg: "User Not Found !",
+        },
+        {
+          status: 401,
+        },
+      );
+    }
+
+    // check Password
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+
+    if (!isMatch) {
+      return NextResponse.json(
+        { msg: "Invalid username or password" },
+        { status: 401 },
+      );
+    }
+
+    // check role
+
+    if (![1, 2, 3, 4].includes(user.role_id)) {
+      return NextResponse.json(
+        {
+          msg: "Invalid role",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
+
+    // create token
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        roleId: user.role_id,
+        restaurantId: user.restaurant_id,
+      },
+      process.env.JWT_SECRET!,
+      {
+        expiresIn: "7d",
+      },
+    );
+
+    // cookies set
+    let cookieName = "";
+    if (user.role_id === 1) {
+      cookieName = "super_token";
+    } else if (user.role_id === 2) {
+      cookieName = "admin_token";
+    } else if (user.role_id === 3) {
+      cookieName = "waiter_token";
+    } else if (user.role_id === 4) {
+      cookieName = "cashier_token";
+    }
+
+    const response = NextResponse.json({
+      msg: "Login successful",
+
+      user: {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        phone: user.phone,
+        role_id: user.role_id,
+        restaurant_id: user.restaurant_id,
+      },
+    });
+    response.cookies.set(cookieName, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24,
+      path: "/",
+    });
+    return response;
   } catch (error) {
     console.error("LOGIN ERROR:", error);
 
