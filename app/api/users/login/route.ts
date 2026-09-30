@@ -119,6 +119,38 @@ export async function POST(req: Request) {
       console.log(dataUsers[0]);
     }
 
+
+    // last login update
+
+
+if (user.role_id === 1) {
+  await db.query(
+    `
+    UPDATE tblsuperadmin
+    SET last_login_at = NOW()
+    WHERE id = ?
+    `,
+    [user.id]
+  );
+} else if (user.role_id === 2) {
+  await db.query(
+    `
+    UPDATE tbladmins
+    SET last_login_at = NOW()
+    WHERE id = ?
+    `,
+    [user.id]
+  );
+} else if (user.role_id === 3 || user.role_id === 4) {
+  await db.query(
+    `
+    UPDATE tblusers
+    SET last_login_at = NOW()
+    WHERE id = ?
+    `,
+    [user.id]
+  );
+}
     // not found
     if (!user) {
       return NextResponse.json(
