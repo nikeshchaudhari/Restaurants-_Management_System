@@ -3,7 +3,7 @@ import React from 'react'
 const page = () => {
   return (
     <div>
-      <h1>Hello NExtJS</h1>
+      <h1>Hello World</h1>git
     </div>
   )
 }
