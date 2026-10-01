@@ -77,9 +77,10 @@ export const POST = async (req: NextRequest) => {
         password_hash,
         role_id,
         restaurant_id,
+        admin_id,
         status
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      VALUES (?, ?, ?, ?, ?, ?, ?,?)`;
 
     const result = await db.query<ResultSetHeader>(createQuery, [
       name,
@@ -88,6 +89,7 @@ export const POST = async (req: NextRequest) => {
       hashPassword,
       4,
       verifyToken.restaurantId,
+      verifyToken.userId,
       "active",
     ]);
 
@@ -104,6 +106,7 @@ export const POST = async (req: NextRequest) => {
           phone,
           role_id: 4,
           restaurant_id: verifyToken.restaurantId,
+          admin_id:verifyToken.userId,
           status: "active",
         },
       },
