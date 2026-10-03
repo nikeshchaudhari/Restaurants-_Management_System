@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 
 import cloudinary from "@/lib/cloudinary";
 import type { UploadApiResponse } from "cloudinary";
-import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { RowDataPacket } from "mysql2";
 
 interface Data extends RowDataPacket {
   id: number;
