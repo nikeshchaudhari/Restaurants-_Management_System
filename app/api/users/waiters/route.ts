@@ -13,6 +13,7 @@ interface AdminRow extends RowDataPacket {
   phone: string | null;
   password_hash: string;
   role_id: number;
+  admin_id:number;
   restaurant_id: number | null;
   status: "active" | "inactive";
 }
@@ -40,6 +41,11 @@ export const POST = async (req: NextRequest) => {
         { status: 403 },
       );
     }
+
+       console.log("VERIFY TOKEN:", verifyToken);
+    console.log("ADMIN ID:", verifyToken.userId);
+    console.log("RESTAURANT ID:", verifyToken.restaurantId);
+    console.log("ROLE ID:", verifyToken.roleId);
 
     const body = await req.json();
 
@@ -78,9 +84,10 @@ export const POST = async (req: NextRequest) => {
         password_hash,
         role_id,
         restaurant_id,
+        admin_id,
         status
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      VALUES (?, ?, ?, ?, ?, ?, ?,?)`;
 
     const data = await db.query<ResultSetHeader>(createQuery, [
       name,
@@ -89,6 +96,7 @@ export const POST = async (req: NextRequest) => {
       hashPassword,
       3,
       verifyToken.restaurantId,
+      verifyToken.userId,
       "active",
     ]);
 
@@ -104,6 +112,7 @@ export const POST = async (req: NextRequest) => {
           phone,
           role_id: 3,
           restaurant_id: verifyToken.restaurantId,
+          admin_id : verifyToken.userId,
           status: "active",
         },
       },
