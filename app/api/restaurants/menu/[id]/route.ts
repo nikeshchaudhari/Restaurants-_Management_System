@@ -142,28 +142,32 @@ export const PUT = async (req: NextRequest) => {
     const bytes = await image.arrayBuffer();
     const buffer = await Buffer.from(bytes);
 
-    const uploadFile:UploadApiResponse = await cloudinary.uploader
-      .upload_stream(
-        {
-          folder: "restaurant-menu",
-          resource_type: "image",
-        },
-        (error, result) => {
-          if (error) {
-            console.log("Upload error:", error);
-            return;
-          }
+    const uploadFile = await new Promise<UploadApiResponse>((resolve,reject) => {
+      cloudinary.uploader.upload_stream({
+        folder: "restaurant-menu",
+        resource_type: "image",
+      },(error,result)=>{
+        if(error){
+          reject(error);
+          return;
+        }
+        
+              if (!result) {
+                reject(new Error("Image upload failed"));
+                return;
+              }
 
-          console.log("Upload result:", result);
-          console.log("URL:", result?.secure_url);
-          console.log("Public ID:", result?.public_id);
-        },
-      )
-      .end(buffer);
-      const uploadData = uploadFile[0]
+              resolve(result);
+      }).end(buffer);
+    });
+    
 
-console.log(uploadData.secure_url);
+    console.log(uploadFile);
+    
 
+    const imageUrl = uploadFile.secure_url;
+    const imageId = uploadFile.public_id;
+    
     return NextResponse.json(
       {
         msg: "Menu updated successfully",
