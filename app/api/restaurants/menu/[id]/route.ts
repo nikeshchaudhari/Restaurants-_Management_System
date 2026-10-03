@@ -261,7 +261,26 @@ export const DELETE = async (req: NextRequest) => {
       );
     }
 
+    const url =  new URL(req.url);
+    const id =  url.pathname.split("/").pop();
+
+    if (!id) {
+      return NextResponse.json({ msg: "Invalid menu id" }, { status: 400 });
+    }
+
+    const deleteQuery = `DELETE FROM tblmenu WHERE id =? AND restaurant_id = ?`;
     
+    await db.query(deleteQuery,[id,verifyToken.restaurantId]);
+
+     return NextResponse.json(
+      {
+        msg: "Menu deleted successfully",
+        menuId: id,
+      },
+      { status: 200 }
+    );
+
+
   } catch (err) {
     console.error("DELETE MENU ERROR:", err);
 
