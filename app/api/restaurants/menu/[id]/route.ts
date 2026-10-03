@@ -237,3 +237,34 @@ export const PUT = async (req: NextRequest) => {
     return NextResponse.json({ msg: "Something went wrong" }, { status: 500 });
   }
 };
+
+// Delete Menu
+
+export const DELETE = async (req: NextRequest) => {
+  try {
+    const token = req.cookies.get("admin_token")?.value;
+    if (!token) {
+      return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
+    }
+
+    // verify_Token
+    const verifyToken = (await jwt.verify(token, process.env.JWT_SECRET!)) as {
+      userId: number;
+      roleId: number;
+      restaurantId: number;
+    };
+
+    if (verifyToken.roleId !== 2) {
+      return NextResponse.json(
+        { msg: "Only admin can access this" },
+        { status: 403 },
+      );
+    }
+
+    
+  } catch (err) {
+    console.error("DELETE MENU ERROR:", err);
+
+    return NextResponse.json({ msg: "Something went wrong" }, { status: 500 });
+  }
+};
