@@ -12,7 +12,8 @@ interface MenuRow extends RowDataPacket {
   description: string | null;
   price: number;
   image_url: string;
-  stock: "available" | "not_available";
+  imageId: string;
+  stock: "available" | "not available";
   status: "active" | "inactive";
 }
 
@@ -71,7 +72,7 @@ export const PUT = async (req: NextRequest) => {
     const stock = formData.get("stock") as string;
     const status = formData.get("status") as string;
 
-    const image = formData.get("image") as File;
+    const image = formData.get("image") as File | null;
 
     if (!name || !price) {
       return NextResponse.json(
@@ -97,13 +98,13 @@ export const PUT = async (req: NextRequest) => {
       FROM tblmenu
       WHERE restaurant_id = ?
         AND name = ?
-        AND id != ?
+        AND id = ?
       LIMIT 1`;
 
     const existData = await db.query<MenuRow[]>(existMenuQuery, [
-      id,
-      name,
       verifyToken.restaurantId,
+      name,
+      id,
     ]);
     const dataMenu = existData[0];
 
@@ -118,59 +119,115 @@ export const PUT = async (req: NextRequest) => {
 
     // image
 
-    const maxSize = 2 * 1024 * 1024;
+    let imageUrl = menuData[0].image_url;
+    let imageId = menuData[0].imageId;
 
-    if (image && image?.size > maxSize) {
-      return NextResponse.json(
-        { msg: "Image size must be less than 2 MB" },
-        { status: 400 },
+    if (image) {
+      const maxSize = 2 * 1024 * 1024;
+
+      if (image && image?.size > maxSize) {
+        return NextResponse.json(
+          { msg: "Image size must be less than 2 MB" },
+          { status: 400 },
+        );
+      }
+
+      // allowed type photo
+      const allowedType = ["image/jpeg", "image/png", "image/jpg"];
+
+      if (!allowedType.includes(image.type)) {
+        return NextResponse.json(
+          { msg: "Only JPEG and PNG images are allowed" },
+          { status: 400 },
+        );
+      }
+
+      // buffer
+
+      const bytes = await image.arrayBuffer();
+      const buffer = await Buffer.from(bytes);
+
+      const uploadFile = await new Promise<UploadApiResponse>(
+        (resolve, reject) => {
+          cloudinary.uploader
+            .upload_stream(
+              {
+                folder: "restaurant-menu",
+                resource_type: "image",
+              },
+              (error, result) => {
+                if (error) {
+                  reject(error);
+                  return;
+                }
+
+                if (!result) {
+                  reject(new Error("Image upload failed"));
+                  return;
+                }
+
+                resolve(result);
+              },
+            )
+            .end(buffer);
+        },
       );
+
+      console.log(uploadFile);
+
+      imageUrl = uploadFile.secure_url;
+      imageId = uploadFile.public_id;
     }
 
-    // allowed type photo
-    const allowedType = ["image/jpeg", "image/png", "image/jpg"];
+    // update query
+    const updateQuery = `
+  UPDATE tblmenu SET
+    name = ?,
+    description = ?,
+    price = ?,
+    image_url = ?,
+    imageId = ?,
+    stock = ?,
+    status = ?
+  WHERE id = ? AND restaurant_id = ?
+`;
 
-    if (!allowedType.includes(image.type)) {
-      return NextResponse.json(
-        { msg: "Only JPEG and PNG images are allowed" },
-        { status: 400 },
-      );
-    }
+    await db.query(updateQuery, [
+      name,
+      description || null,
+      price,
+      imageUrl,
+      imageId,
+      stock || menuData[0].stock,
+      status || menuData[0].status,
+      id,
+      verifyToken.restaurantId,
+    ]);
 
-    // buffer
+    // return data
 
-    const bytes = await image.arrayBuffer();
-    const buffer = await Buffer.from(bytes);
+    const updateDetailsQuery = ` SELECT
+        id,
+        restaurant_id,
+        name,
+        description,
+        price,
+        image_url,
+        stock,
+        status,
+        created_at  FROM tblmenu
+      WHERE id = ?
+        AND restaurant_id = ?`;
 
-    const uploadFile = await new Promise<UploadApiResponse>((resolve,reject) => {
-      cloudinary.uploader.upload_stream({
-        folder: "restaurant-menu",
-        resource_type: "image",
-      },(error,result)=>{
-        if(error){
-          reject(error);
-          return;
-        }
-        
-              if (!result) {
-                reject(new Error("Image upload failed"));
-                return;
-              }
+    const finalData = await db.query(updateDetailsQuery, [
+      id,
+      verifyToken.restaurantId,
+    ]);
 
-              resolve(result);
-      }).end(buffer);
-    });
-    
-
-    console.log(uploadFile);
-    
-
-    const imageUrl = uploadFile.secure_url;
-    const imageId = uploadFile.public_id;
-    
     return NextResponse.json(
       {
         msg: "Menu updated successfully",
+        updatData: finalData[0],
       },
       { status: 200 },
     );
