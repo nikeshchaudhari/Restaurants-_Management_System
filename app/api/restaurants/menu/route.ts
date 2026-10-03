@@ -13,6 +13,7 @@ interface Data extends RowDataPacket {
   price: string;
   restaurant_id: number;
   image_url: string;
+  imageId:number;
   stock: string;
   status: "active" | "inactive";
 }
@@ -155,6 +156,56 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json({
       msg: "data insert",
     });
+  } catch (err) {
+    console.log("Error");
+
+    return NextResponse.json({
+      error: err instanceof Error ? err.message : err,
+    });
+  }
+};
+
+// get data
+export const GET = async (req: NextRequest) => {
+  try {
+    const token = req.cookies.get("admin_token")?.value;
+    if (!token) {
+      return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
+    }
+
+    const verifyToken = jwt.verify(token, process.env.JWT_SECRET!) as {
+      userId: number;
+      roleId: number;
+      restaurantId: number;
+    };
+
+    if (verifyToken.roleId !== 2) {
+      return NextResponse.json(
+        { msg: "Only admin can access menu" },
+        { status: 403 },
+      );
+    }
+
+    const getDataQuery = `SELECT id,  restaurant_id,
+        name,
+        description,
+        price,
+        image_url,
+        imageId,
+        stock,
+        status,
+        created_at FROM tblmenu WHERE  restaurant_id = ? ORDER BY id DESC`;
+
+    const getData = await db.query<Data[]>(getDataQuery, [verifyToken.restaurantId]);
+    const dataResult = getData[0];
+console.log("GET DATA:", dataResult);
+    return NextResponse.json(
+      {
+        msg: "Menu fetched successfully",
+        dataResult,
+      },
+      { status: 200 },
+    );
   } catch (err) {
     console.log("Error");
 
