@@ -43,7 +43,7 @@ export const PUT = async (req: NextRequest) => {
     }
 
     // check
-   const checkQuery = `
+    const checkQuery = `
   SELECT
     id,
     restaurant_id,
@@ -56,21 +56,16 @@ export const PUT = async (req: NextRequest) => {
   LIMIT 1
 `;
 
-const resultTable = await db.query<Table[]>(checkQuery, [
-  id,
-  verifyToken.restaurantId,
-]);
+    const resultTable = await db.query<Table[]>(checkQuery, [
+      id,
+      verifyToken.restaurantId,
+    ]);
 
-const dataTable:Table[] = resultTable[0];
+    const dataTable: Table[] = resultTable[0];
 
-
-
-if (dataTable.length === 0) {
-  return NextResponse.json(
-    { msg: "Table not found" },
-    { status: 404 }
-  );
-}
+    if (dataTable.length === 0) {
+      return NextResponse.json({ msg: "Table not found" }, { status: 404 });
+    }
 
     const body = await req.json();
     const { table_number, capacity, status } = body;
@@ -126,7 +121,7 @@ if (dataTable.length === 0) {
       AND restaurant_id = ?
     `;
 
-     await db.query(updateQuery, [
+    await db.query(updateQuery, [
       table_number,
       capacity,
       status,
@@ -138,10 +133,75 @@ if (dataTable.length === 0) {
       {
         msg: "Table updated successfully",
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (err) {
     console.error("UPDATE TABLE ERROR:", err);
+
+    return NextResponse.json({ msg: "Something went wrong" }, { status: 500 });
+  }
+};
+
+// Delete Table
+export const DELETE = async (req: NextRequest) => {
+  try {
+    const token = req.cookies.get("admin_token")?.value;
+
+    if (!token) {
+      return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
+    }
+
+    const verifyToken = jwt.verify(token, process.env.JWT_SECRET!) as {
+      userId: number;
+      roleId: number;
+      restaurantId: number;
+    };
+
+    if (verifyToken.roleId !== 2) {
+      return NextResponse.json(
+        { msg: "Only admin can delete table" },
+        { status: 403 },
+      );
+    }
+
+    // get Id
+    const url = new URL(req.url);
+    const id = url.pathname.split("/").pop();
+
+    if (!id) {
+      return NextResponse.json({ msg: "Invalid table id" }, { status: 400 });
+    }
+
+    const checkQuery = `
+      SELECT id
+      FROM tbltables
+      WHERE id = ?
+      AND restaurant_id = ?
+      LIMIT 1
+    `;
+
+    const resultCheck = await db.query<Table[]>(checkQuery, [
+      id,
+      verifyToken.restaurantId,
+    ]);
+    const dataTable: Table[] = resultCheck[0];
+
+    if (dataTable.length === 0) {
+      return NextResponse.json({ msg: "Table not found" }, { status: 404 });
+    }
+
+    // Delete Query
+
+    const deleteQuery = `DELETE FROM tbltables WHERE id=? AND restaurant_id = ?`;
+    await db.query(deleteQuery, [id, verifyToken.restaurantId]);
+    return NextResponse.json(
+      {
+        msg: "Table deleted successfully",
+      },
+      { status: 200 },
+    );
+  } catch (err) {
+    console.error("DELETE TABLE ERROR:", err);
 
     return NextResponse.json({ msg: "Something went wrong" }, { status: 500 });
   }
