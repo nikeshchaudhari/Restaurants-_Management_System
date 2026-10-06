@@ -59,22 +59,94 @@ export const POST = async (req: NextRequest) => {
 
     // insert Data
     const inserQuery = `INSERT INTO tblorders (restaurant_id, total_amount, table_id)VALUES (?, ?, ?)`;
-     await db.query(inserQuery, [
+    await db.query(inserQuery, [
       verifyToken.restaurantId,
       total_amount,
       table_id,
     ]);
 
-    return NextResponse.json(
-      { msg: "Orders Data Insert", },
-      { status: 200 },
-    );
+    return NextResponse.json({ msg: "Orders Data Insert" }, { status: 200 });
   } catch (err) {
     console.error(err);
 
     return NextResponse.json(
       { msg: "Failed to create order" },
       { status: 500 },
+    );
+  }
+};
+
+// Self orders view Get Data
+
+export const GET = async (req: NextRequest) => {
+  try {
+    const adminToken = req.cookies.get("admin_token")?.value;
+    const waiterToken = req.cookies.get("waiter_token")?.value;
+    const cashierToken = req.cookies.get("cashier_token")?.value;
+
+    const token = adminToken || waiterToken || cashierToken;
+
+    if (!token) {
+      return NextResponse.json(
+        {
+          msg: "Unauthorized",
+        },
+        {
+          status: 401,
+        },
+      );
+    }
+
+    const verifyToken = jwt.verify(token, process.env.JWT_SECRET!) as {
+      userId: number;
+      roleId: number;
+      restaurantId: number;
+    };
+
+    if (![2, 3, 4].includes(verifyToken.roleId)) {
+      return NextResponse.json(
+        {
+          msg: "You are not allowed to view orders",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
+
+    if (!verifyToken.restaurantId) {
+      return NextResponse.json(
+        {
+          msg: "Restaurant not assigned",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const getData = `SELECT o.id,o.restaurant_id,o.table_id,t.table_number,o.total_amount,o.created_at FROM tblorders o LEFT JOIN tbltables t ON o.table_id = t.id WHERE  o.restaurant_id = ? ORDER BY o.id DESC`;
+
+    const resultData = await db.query(getData,[verifyToken.restaurantId]);
+      return NextResponse.json(
+      {
+        msg: "Orders fetched successfully",
+        data: resultData[0],
+      },
+      {
+        status: 200,
+      }
+    );
+  } catch (err) {
+    console.log(err);
+
+    return NextResponse.json(
+      {
+        msg: "Failed to fetch orders",
+      },
+      {
+        status: 500,
+      },
     );
   }
 };
