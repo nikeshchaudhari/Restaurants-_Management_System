@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
+import { CircleAlert, Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 
+const APU_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function LoginForm() {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -11,10 +12,32 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const [error, setError] = useState("");
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+
+    try {
+      const res = await fetch(`${APU_URL}/api/users/login`, {
+        method: "POST",
+        headers: { "contenet-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username, password, rememberMe }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Invalid username or password");
+      }
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error ?err.message:"Something went wrong"
+      )
+    }finally{
+      setLoading(false)
+    }
   };
 
   return (
@@ -26,7 +49,17 @@ export default function LoginForm() {
 
         {/* form */}
 
-        <form>
+        <form onSubmit={handleSubmit}>
+
+          {error && (
+  <div
+    role="alert"
+    className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+  >
+    <CircleAlert size={20} className="shrink-0" />
+    <p>{error}</p>
+  </div>
+)}
           {/* username */}
 
           <div>

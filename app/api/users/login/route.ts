@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const { username, password } = body;
+    const { username, password ,rememberMe} = body;
 
     if (!username || !password) {
       return NextResponse.json(
@@ -196,7 +196,7 @@ if (user.role_id === 1) {
       },
       process.env.JWT_SECRET!,
       {
-        expiresIn: "7d",
+        expiresIn: rememberMe?"30d":"1d",
       },
     );
 
@@ -211,6 +211,8 @@ if (user.role_id === 1) {
     } else if (user.role_id === 4) {
       cookieName = "cashier_token";
     }
+
+    const maxAge = rememberMe ?30*24*60*60 :24*60*60;
 
     const response = NextResponse.json({
       msg: "Login successful",
@@ -228,7 +230,7 @@ if (user.role_id === 1) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24,
+      maxAge,
       path: "/",
     });
     return response;
