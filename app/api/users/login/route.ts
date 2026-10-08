@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const { username, password ,rememberMe} = body;
+    const { username, password, rememberMe } = body;
 
     if (!username || !password) {
       return NextResponse.json(
@@ -59,7 +59,6 @@ export async function POST(req: Request) {
     if (resultData.length > 0) {
       const users = resultData[0];
       user = users;
-     
     }
 
     // admin
@@ -85,7 +84,6 @@ export async function POST(req: Request) {
       const dataAdmin = adminResult[0];
       if (dataAdmin.length > 0) {
         user = dataAdmin[0];
-        
       }
     }
 
@@ -112,45 +110,41 @@ export async function POST(req: Request) {
       const dataUsers = userResult[0];
       if (dataUsers.length > 0) {
         user = dataUsers[0];
-
-        
       }
 
       console.log(dataUsers[0]);
     }
 
-
     // last login update
 
-
-if (user.role_id === 1) {
-  await db.query(
-    `
+    if (user.role_id === 1) {
+      await db.query(
+        `
     UPDATE tblsuperadmin
     SET last_login_at = NOW()
     WHERE id = ?
     `,
-    [user.id]
-  );
-} else if (user.role_id === 2) {
-  await db.query(
-    `
+        [user.id],
+      );
+    } else if (user.role_id === 2) {
+      await db.query(
+        `
     UPDATE tbladmins
     SET last_login_at = NOW()
     WHERE id = ?
     `,
-    [user.id]
-  );
-} else if (user.role_id === 3 || user.role_id === 4) {
-  await db.query(
-    `
+        [user.id],
+      );
+    } else if (user.role_id === 3 || user.role_id === 4) {
+      await db.query(
+        `
     UPDATE tblusers
     SET last_login_at = NOW()
     WHERE id = ?
     `,
-    [user.id]
-  );
-}
+        [user.id],
+      );
+    }
     // not found
     if (!user) {
       return NextResponse.json(
@@ -191,12 +185,14 @@ if (user.role_id === 1) {
     const token = jwt.sign(
       {
         userId: user.id,
+        name: user.name,
+        username: user.username,
         roleId: user.role_id,
         restaurantId: user.restaurant_id,
       },
       process.env.JWT_SECRET!,
       {
-        expiresIn: rememberMe?"30d":"1d",
+        expiresIn: rememberMe ? "30d" : "1d",
       },
     );
 
@@ -212,7 +208,7 @@ if (user.role_id === 1) {
       cookieName = "cashier_token";
     }
 
-    const maxAge = rememberMe ?30*24*60*60 :24*60*60;
+    const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
 
     const response = NextResponse.json({
       msg: "Login successful",
