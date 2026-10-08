@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { CircleAlert, Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 
 const APU_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function LoginForm() {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -20,7 +21,7 @@ export default function LoginForm() {
     try {
       const res = await fetch(`${APU_URL}/api/users/login`, {
         method: "POST",
-        headers: { "contenet-Type": "application/json" },
+        headers: { "Contenet-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ username, password, rememberMe }),
       });
@@ -29,14 +30,22 @@ export default function LoginForm() {
       if (!res.ok) {
         throw new Error(data.message || "Invalid username or password");
       }
-      router.push("/dashboard");
+
+      if (data.user.role_id === 1) {
+        router.push("/dashboard/superadmin");
+      } else if (data.user.role_id === 2) {
+        router.push("/dashboard/admin");
+      } else if (data.user.role_id === 3 || data.user.role_id === 4) {
+        router.push("/dashboard/staff");
+      } else {
+        throw new Error("Invalid user role");
+      }
+
       router.refresh();
     } catch (err) {
-      setError(
-        err instanceof Error ?err.message:"Something went wrong"
-      )
-    }finally{
-      setLoading(false)
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -50,16 +59,15 @@ export default function LoginForm() {
         {/* form */}
 
         <form onSubmit={handleSubmit}>
-
           {error && (
-  <div
-    role="alert"
-    className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-  >
-    <CircleAlert size={20} className="shrink-0" />
-    <p>{error}</p>
-  </div>
-)}
+            <div
+              role="alert"
+              className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+            >
+              <CircleAlert size={20} className="shrink-0" />
+              <p>{error}</p>
+            </div>
+          )}
           {/* username */}
 
           <div>
