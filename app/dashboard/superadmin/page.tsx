@@ -2,8 +2,6 @@
 
 import Sidebar from '@/components/dashboard/Sidebar';
 import Topbar from '@/components/dashboard/Topbar';
-import StatCard from '@/components/dashboard/StatCard';
-import RecentOrders from '@/components/dashboard/RecentOrders';
 
 export default function SuperAdminDashboard() {
   return (
